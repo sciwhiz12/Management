@@ -1,0 +1,28 @@
+modLoader = "javafml"
+loaderVersion = "[33,)"
+license = "MIT License"
+
+[[mods]]
+modId = "management"
+version = "${file.jarVersion}"
+displayName = "Management"
+authors = "sciwhiz12"
+description = '''
+* Server administration, moderation, and management. *
+
+A server management mod.
+'''
+
+[[dependencies.management]]
+modId = "forge"
+mandatory = true
+versionRange = "[33.0.0,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.management]]
+modId = "minecraft"
+mandatory = true
+versionRange = "[1.16.2]"
+ordering = "NONE"
+side = "BOTH"
