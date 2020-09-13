@@ -1,3 +1,4 @@
+import java.time.Instant
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
@@ -122,9 +123,11 @@ String calculateVersion() {
         }
         return startVer + "." + versionSep[1]
     } catch (Exception e) {
-        String ver = 'unknown'
-        if (System.getenv("GITHUB_RUN_NUMBER") != null) ver = System.getenv("GITHUB_RUN_NUMBER") + '-DEV'
-        else if (System.getenv("RUN_NUMBER") != null) ver = System.getenv("RUN_NUMBER") + '-DEV'
+        String ver = Long.toHexString(Instant.now().getEpochSecond()) + '-'
+        if (System.getenv("GITHUB_RUN_NUMBER") != null) ver += System.getenv("GITHUB_RUN_NUMBER")
+        else if (System.getenv("RUN_NUMBER") != null) ver += System.getenv("RUN_NUMBER")
+        else ver += "unknown"
+        ver += '-DEV'
         logger.error("Error getting version information, defaulting to '${ver}': {}", e.getMessage())
         return ver
     }
