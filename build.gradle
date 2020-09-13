@@ -1,3 +1,6 @@
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
+
 buildscript {
     repositories {
         maven { url = 'https://files.minecraftforge.net/maven' }
@@ -6,16 +9,20 @@ buildscript {
     }
     dependencies {
         classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '3.+', changing: true
+        classpath group: 'org.ajoberstar.grgit', name: 'grgit-gradle', version: grgit_version
     }
 }
 apply plugin: 'net.minecraftforge.gradle'
 apply plugin: 'eclipse'
 apply plugin: 'idea'
+apply plugin: 'org.ajoberstar.grgit'
 apply plugin: 'maven-publish'
 
-version = "${mc_version}-${mod_version}"
+final String realVersion = calculateVersion()
+version = realVersion.replace('/', '_')
+printf("Mod version: %s%n", version)
 group = 'sciwhiz12.management'
-archivesBaseName = 'management'
+archivesBaseName = "management-${mc_version}"
 
 sourceCompatibility = targetCompatibility = compileJava.sourceCompatibility = compileJava.targetCompatibility = '1.8'
 
@@ -25,18 +32,18 @@ sourceSets {
 
 repositories {
     maven {
+        name 'gigaherz\' maven'
         url 'https://www.dogforce-games.com/maven/'
     }
 }
 
 minecraft {
-    mappings channel: 'snapshot', version: "${mappings_version}"
-    
+    mappings channel: 'snapshot', version: mappings_version
+
     runs {
         client {
             workingDirectory project.file('run/client')
-
-            property 'forge.logging.markers', "${logging_markers}"
+            property 'forge.logging.markers', logging_markers
             property 'forge.logging.console.level', 'debug'
 
             mods {
@@ -48,8 +55,7 @@ minecraft {
 
         server {
             workingDirectory project.file('run/server')
-
-            property 'forge.logging.markers', "${logging_markers}"
+            property 'forge.logging.markers', logging_markers
             property 'forge.logging.console.level', 'debug'
 
             mods {
@@ -61,11 +67,12 @@ minecraft {
 
         data {
             workingDirectory project.file('run/data')
-
-            property 'forge.logging.markers', "${logging_markers}"
+            property 'forge.logging.markers', logging_markers
             property 'forge.logging.console.level', 'debug'
 
-            args '--mod', 'management', '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')
+            args '--mod', 'management', '--all'
+            args '--output', file('src/generated/resources/')
+            args '--existing', file('src/main/resources/')
 
             mods {
                 management {
@@ -80,17 +87,46 @@ dependencies {
     minecraft "net.minecraftforge:forge:${mc_version}-${forge_version}"
 }
 
+String git_commit_id = "!unknown!", git_timestamp = "!unknown!"
+try {
+    def git_head = grgit.head()
+    git_commit_id = git_head.id
+    git_timestamp = git_head.dateTime.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
+} catch (Exception e) {
+    logger.error("Error geting commit information", e)
+}
+
 jar {
     manifest {
         attributes([
-            "Specification-Title": "management",
-            "Specification-Vendor": "sciwhiz12",
-            "Specification-Version": "1",
-            "Implementation-Title": project.name,
-            "Implementation-Version": "${version}",
-            "Implementation-Vendor" :"sciwhiz12",
-            "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+                "Specification-Title"   : "management",
+                "Specification-Vendor"  : "sciwhiz12",
+                "Specification-Version" : "1",
+                "Implementation-Title"  : project.name,
+                "Implementation-Version": realVersion,
+                "Implementation-Vendor" : "sciwhiz12",
+                "Build-Timestamp"       : ZonedDateTime.now().withNano(0).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+                "Git-Commit-Id"         : git_commit_id,
+                "Git-Commit-Timestamp"  : git_timestamp
         ])
+    }
+}
+
+String calculateVersion() {
+    try {
+        final String raw_version = grgit.describe(longDescr: true, tags: true)
+        final String[] versionSep = raw_version.split "-"
+        final String startVer = versionSep[0].substring(1)
+        if (!grgit.branch.current().name.matches(branch_suffix_exempt_regex)) {
+            return startVer + "." + versionSep[1] + "-" + grgit.head().abbreviatedId + "-" + grgit.branch.current().name
+        }
+        return startVer + "." + versionSep[1]
+    } catch (Exception e) {
+        String ver = 'unknown'
+        if (System.getenv("GITHUB_RUN_NUMBER") != null) ver = System.getenv("GITHUB_RUN_NUMBER") + '-DEV'
+        else if (System.getenv("RUN_NUMBER") != null) ver = System.getenv("RUN_NUMBER") + '-DEV'
+        logger.error("Error getting version information, defaulting to '${ver}': {}", e.getMessage())
+        return ver
     }
 }
 
@@ -102,22 +138,21 @@ task sourcesJar(type: Jar, dependsOn: classes) {
     classifier "sources"
 }
 
-artifacts {
-    archives sourcesJar
-}
+artifacts.archives sourcesJar
 
 publishing {
     publications {
-        pub_reobfJar(MavenPublication) {
+        outJar(MavenPublication) {
             artifact jar
         }
-        pub_sourcesJar(MavenPublication) {
+        sourceJar(MavenPublication) {
             artifact sourcesJar
         }
     }
     repositories {
         mavenLocal()
         maven {
+            name 'projectLocal'
             url "file:///${project.projectDir}/mcmodsrepo"
         }
     }
