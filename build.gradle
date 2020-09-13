@@ -113,15 +113,17 @@ jar {
     }
 }
 
+import java.util.regex.*
 String calculateVersion() {
     try {
-        final String raw_version = grgit.describe(longDescr: true, tags: true)
-        final String[] versionSep = raw_version.split "-"
-        final String ver = versionSep[0].substring(1)
+        final Pattern pattern = Pattern.compile("(?i)v?(.+)-(\\d+)-g[a-f\\d]+")
+        final Matcher matcher = pattern.matcher(grgit.describe(longDescr: true, tags: true))
+        if (!matcher.matches()) throw new IllegalStateException("Version string from grgit.describe does not match")
+        final String ver = matcher.group(1)
         if (!grgit.branch.current().name.matches(branch_suffix_exempt_regex)) {
             return ver + "-" + grgit.head().abbreviatedId + "-" + grgit.branch.current().name
         }
-        final int commitAmount = Integer.parseInt(versionSep[1])
+        final int commitAmount = matcher.group(2).toInteger()
         if (commitAmount != 0) {
             return ver + "-" + commitAmount + "-SNAPSHOT"
         }
@@ -132,7 +134,7 @@ String calculateVersion() {
         else if (System.getenv("RUN_NUMBER") != null) ver += System.getenv("RUN_NUMBER")
         else ver += "unknown"
         ver += '-DEV'
-        logger.error("Error getting version information, defaulting to '${ver}': {}", e.getMessage())
+       logger.error("Error getting version information, defaulting to '${ver}': {}", e.getMessage())
         return ver
     }
 }
