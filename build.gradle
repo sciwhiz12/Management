@@ -117,11 +117,15 @@ String calculateVersion() {
     try {
         final String raw_version = grgit.describe(longDescr: true, tags: true)
         final String[] versionSep = raw_version.split "-"
-        final String startVer = versionSep[0].substring(1)
+        final String ver = versionSep[0].substring(1)
         if (!grgit.branch.current().name.matches(branch_suffix_exempt_regex)) {
-            return startVer + "." + versionSep[1] + "-" + grgit.head().abbreviatedId + "-" + grgit.branch.current().name
+            return ver + "-" + grgit.head().abbreviatedId + "-" + grgit.branch.current().name
         }
-        return startVer + "." + versionSep[1]
+        final int commitAmount = Integer.parseInt(versionSep[1])
+        if (commitAmount != 0) {
+            return ver + "-" + commitAmount + "-SNAPSHOT"
+        }
+        return ver
     } catch (Exception e) {
         String ver = Long.toHexString(Instant.now().getEpochSecond()) + '-'
         if (System.getenv("GITHUB_RUN_NUMBER") != null) ver += System.getenv("GITHUB_RUN_NUMBER")
