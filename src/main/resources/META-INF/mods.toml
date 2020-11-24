@@ -1,11 +1,11 @@
 modLoader = "javafml"
-loaderVersion = "[34,)"
+loaderVersion = "[34,36)"
 license = "MIT License"
 
 [[mods]]
-modId = "management"
+modId = "oversight"
 version = "${file.jarVersion}"
-displayName = "Management"
+displayName = "Oversight"
 authors = "sciwhiz12"
 description = '''
 * Server administration, moderation, and management. *
@@ -13,16 +13,16 @@ description = '''
 A server management mod.
 '''
 
-[[dependencies.management]]
+[[dependencies.oversight]]
 modId = "forge"
 mandatory = true
-versionRange = "[34.0.0,)"
+versionRange = "[34.1.0,36)"
 ordering = "NONE"
 side = "BOTH"
 
-[[dependencies.management]]
+[[dependencies.oversight]]
 modId = "minecraft"
 mandatory = true
-versionRange = "[1.16.3]"
+versionRange = "[1.16.3,1.17)"
 ordering = "NONE"
 side = "BOTH"
